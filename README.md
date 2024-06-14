@@ -12,10 +12,12 @@ https://github.com/MNeMoNiCuZ/ImageSorting/assets/60541708/d4863089-e24e-45c3-ae
 # Requirements
 Developed on Python 3.12.
 
-`tkinter` library, but it should come with python.
+`tkinter`
+`PIL` / `pillow`
 
 # Installation
 `git clone https://github.com/MNeMoNiCuZ/ImageSorting`
+`pip install pillow`
 
 # Usage Instructions
 - Double-click to launch `main.py` or run `py main.py` from CLI
