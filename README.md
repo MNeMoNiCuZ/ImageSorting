@@ -10,13 +10,15 @@ It's useful for categorizing and sorting files quickly and effortlessly.
 https://github.com/MNeMoNiCuZ/ImageSorting/assets/60541708/d4863089-e24e-45c3-ae55-3b0e47f11b74
 
 # Requirements
-Python, not sure how low it can go. Developed on Python 3.12.
+Developed on Python 3.12.
+
+`tkinter` library, but it should come with python.
 
 # Installation
 `git clone https://github.com/MNeMoNiCuZ/ImageSorting`
 
 # Usage Instructions
-- Launch `main.py`
+- Double-click to launch `main.py` or run `py main.py` from CLI
 - Go to the `Setup` menu and pick: `Select Image Folder` from the menu
 - Browse to where you have your images
   - It will automatically include images in subfolders recursively
