@@ -13,6 +13,7 @@ https://github.com/MNeMoNiCuZ/ImageSorting/assets/60541708/d4863089-e24e-45c3-ae
 Developed on Python 3.12.
 
 `tkinter`
+
 `PIL` / `pillow`
 
 # Installation
