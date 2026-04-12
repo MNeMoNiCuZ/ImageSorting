@@ -1,0 +1,16 @@
+# Install pytorch manually before these requirements. Tested with `torch 2.8.0+cu128` on python 3.12.3
+
+# CLIP engine
+Pillow
+transformers
+
+# SigLIP engine
+Pillow
+transformers
+sentencepiece
+protobuf
+
+# T5 (BLIP + sentence similarity) engine
+Pillow
+transformers
+sentence-transformers

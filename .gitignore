@@ -205,3 +205,10 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Custom
+AGENTS.md
+input/
+output/
+venv_activate.bat
+config.ini
