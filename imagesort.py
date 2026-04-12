@@ -109,9 +109,10 @@ def load_settings(config_path: Path):
 
     defaults = {
         "architecture": "clip",
-        "mode": "console",
-        "console_order": "input",
+        "mode": "log",
+        "log_order": "input",
         "result_location": "input",
+        "sort_operation": "copy",
         "top_k": "3",
     }
     settings = defaults.copy()
@@ -183,38 +184,34 @@ def write_sidecar_txt(image_path: Path, text: str):
         f.write(text)
 
 
-def move_or_copy_image_to_root(image_path: Path, source_root: Path, target_root: Path, move_file: bool):
-    try:
-        rel_path = image_path.relative_to(source_root)
-    except ValueError:
-        rel_path = Path(image_path.name)
-    target_path = target_root / rel_path
-    target_path.parent.mkdir(parents=True, exist_ok=True)
-
-    if image_path.resolve() == target_path.resolve():
-        return image_path
-
-    if move_file:
-        shutil.move(str(image_path), str(target_path))
-    else:
-        shutil.copy(str(image_path), str(target_path))
-    return target_path
+def build_text_tags(matches):
+    tags = []
+    seen = set()
+    for match in matches:
+        tag = match["printed"].strip()
+        if tag and tag not in seen:
+            tags.append(tag)
+            seen.add(tag)
+    return ", ".join(tags)
 
 
-def route_sorted_image(image_path: Path, source_root: Path, category_name: str, result_location: str):
+def route_sorted_image(
+    image_path: Path,
+    source_root: Path,
+    category_name: str,
+    result_location: str,
+    sort_operation: str,
+):
     category_path = category_name.replace("/", os.sep).replace("\\", os.sep)
 
     if result_location == "input":
         target_root = source_root / category_path
-        move_file = True
-    elif result_location == "copy_to_output":
+        move_file = sort_operation == "move"
+    elif result_location == "output":
         target_root = OUTPUT_FOLDER / category_path
-        move_file = False
-    elif result_location == "move_to_output":
-        target_root = OUTPUT_FOLDER / category_path
-        move_file = True
+        move_file = sort_operation == "move"
     else:
-        raise ValueError("RESULT_LOCATION must be: input, copy_to_output, move_to_output")
+        raise ValueError("RESULT_LOCATION must be: input, output")
 
     target_folder = target_root
     target_folder.mkdir(parents=True, exist_ok=True)
@@ -233,7 +230,7 @@ def route_sorted_image(image_path: Path, source_root: Path, category_name: str, 
     print(f"{action}: {image_path.name} -> {target_folder}")
 
 
-def print_console_input_order(results):
+def print_log_input_order(results):
     for result in results:
         best = result["matches"][0]
         print(f"{result['image'].name} -> {best['printed']} ({best['score']:.4f})")
@@ -241,7 +238,7 @@ def print_console_input_order(results):
             print(f"  {rank}. {match['printed']} | score={match['score']:.4f}")
 
 
-def print_console_category_order(results):
+def print_log_category_order(results):
     grouped = {}
     for result in results:
         best_category = result["matches"][0]["printed"]
@@ -270,18 +267,21 @@ def main():
 
     architecture = settings["architecture"].lower().strip()
     mode = settings["mode"].lower().strip()
-    console_order = settings["console_order"].lower().strip()
+    log_order = settings["log_order"].lower().strip()
     result_location = settings["result_location"].lower().strip()
+    sort_operation = settings["sort_operation"].lower().strip()
     top_k = int(settings["top_k"])
 
     if architecture not in {"clip", "siglip", "t5"}:
         raise ValueError("ARCHITECTURE must be one of: clip, siglip, t5")
-    if mode not in {"console", "text", "sort"}:
-        raise ValueError("MODE must be one of: console, text, sort")
-    if console_order not in {"input", "category"}:
-        raise ValueError("CONSOLE_ORDER must be one of: input, category")
-    if result_location not in {"input", "copy_to_output", "move_to_output"}:
-        raise ValueError("RESULT_LOCATION must be one of: input, copy_to_output, move_to_output")
+    if mode not in {"log", "text", "sort"}:
+        raise ValueError("MODE must be one of: log, text, sort")
+    if log_order not in {"input", "category"}:
+        raise ValueError("LOG_ORDER must be one of: input, category")
+    if result_location not in {"input", "output"}:
+        raise ValueError("RESULT_LOCATION must be one of: input, output")
+    if sort_operation not in {"move", "copy"}:
+        raise ValueError("SORT_OPERATION must be one of: move, copy")
     if top_k < 1:
         raise ValueError("TOP_K must be >= 1")
 
@@ -293,7 +293,9 @@ def main():
     print(f"Architecture: {architecture}")
     print(f"Model: {model_id}")
     print(f"Mode: {mode}")
+    print(f"Mode info: log=print only, text=write top_k tags to .txt, sort=place images in category folders")
     print(f"Result location: {result_location}")
+    print(f"Sort operation: {sort_operation}")
     print(f"Top K: {top_k}")
     print(f"Images: {len(image_entries)}")
     print(f"Device: {device}")
@@ -391,39 +393,42 @@ def main():
                 })
             results.append({"image": image_path, "source_root": entry["source_root"], "matches": matches})
 
-    if mode == "console":
-        if console_order == "category":
-            print_console_category_order(results)
+    if mode == "log":
+        if log_order == "category":
+            print_log_category_order(results)
         else:
-            print_console_input_order(results)
+            print_log_input_order(results)
         return
 
     if mode == "text":
         for result in results:
-            best = result["matches"][0]["printed"]
+            tags = build_text_tags(result["matches"])
             image_path = result["image"]
-            if result_location == "copy_to_output":
-                image_path = move_or_copy_image_to_root(
-                    result["image"],
-                    result["source_root"],
-                    OUTPUT_FOLDER,
-                    move_file=False,
-                )
-            elif result_location == "move_to_output":
-                image_path = move_or_copy_image_to_root(
-                    result["image"],
-                    result["source_root"],
-                    OUTPUT_FOLDER,
-                    move_file=True,
-                )
-            write_sidecar_txt(image_path, best)
-            print(f"Wrote txt: {image_path.with_suffix('.txt').name}")
+            if result_location == "output":
+                try:
+                    rel_path = image_path.relative_to(result["source_root"])
+                except ValueError:
+                    rel_path = Path(image_path.name)
+                txt_path = (OUTPUT_FOLDER / rel_path).with_suffix(".txt")
+                txt_path.parent.mkdir(parents=True, exist_ok=True)
+                with open(txt_path, "w", encoding="utf-8") as f:
+                    f.write(tags)
+                print(f"Wrote txt: {txt_path.name}")
+            else:
+                write_sidecar_txt(image_path, tags)
+                print(f"Wrote txt: {image_path.with_suffix('.txt').name}")
         return
 
     if mode == "sort":
         for result in results:
             best = result["matches"][0]["printed"]
-            route_sorted_image(result["image"], result["source_root"], best, result_location)
+            route_sorted_image(
+                result["image"],
+                result["source_root"],
+                best,
+                result_location,
+                sort_operation,
+            )
         return
 
 

@@ -27,9 +27,10 @@ Edit your local `config.ini`:
 - `[settings]`
   
   - `architecture`: `clip | siglip | t5`
-  - `mode`: `console | text | sort`
-  - `console_order`: `input | category` (used only when `mode=console`)
-  - `result_location`: `input | copy_to_output | move_to_output` (used when `mode=text` or `mode=sort`)
+  - `mode`: `log | text | sort`
+  - `log_order`: `input | category` (used only when `mode=log`)
+  - `result_location`: `input | output` (used when `mode=text` or `mode=sort`)
+  - `sort_operation`: `copy | move` (used when `mode=sort`)
   - `top_k`: number of matches to compute/print
 
 - `[categories]`
@@ -67,25 +68,25 @@ py imagesort.py "C:\images\a" "C:\images\b" "C:\images\one_file.png"
 
 ## Modes
 
-- `mode=console`
+- `mode=log`
   
   - Prints predictions only.
-  - `console_order=input`: keeps original discovered order.
-  - `console_order=category`: groups output by best predicted category.
+  - `log_order=input`: keeps original discovered order.
+  - `log_order=category`: groups output by best predicted category.
 
 - `mode=text`
   
   - Writes `<image>.txt` with best category label.
   - `result_location=input`: write next to original image.
-  - `result_location=copy_to_output`: copy image to `./output` first, then write txt there.
-  - `result_location=move_to_output`: move image to `./output` first, then write txt there.
+  - `result_location=output`: write txt into mirrored path under `./output`.
 
 - `mode=sort`
   
   - Places image into predicted category subfolder.
-  - `result_location=input`: sorts in-place under input/source root.
-  - `result_location=copy_to_output`: copies into `./output/<category>/`.
-  - `result_location=move_to_output`: moves into `./output/<category>/`.
+  - `result_location=input`: sort under source/input root.
+  - `result_location=output`: sort under `./output/<category>/`.
+  - `sort_operation=copy`: keep originals and copy sorted files.
+  - `sort_operation=move`: move originals into sorted location.
 
 ## Script
 
