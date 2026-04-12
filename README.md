@@ -1,95 +1,88 @@
-# ImageSortingCLIP
+# ImageSorting
 
-Unified image categorization script with 3 architectures:
-
+`imagesort.py` classifies images against your configured categories, using one of:
 - `clip`
 - `siglip`
-- `t5` (BLIP captioning + sentence embedding similarity)
+- `t5` (BLIP captioning + sentence similarity)
+
+It can:
+- print predictions (`log` mode),
+- write comma-separated tags to `.txt` sidecars (`text` mode, uses `top_k`),
+- sort images into category folders (`sort` mode).
 
 ## Setup
 
-1. **Create Virtual Environment**: Create a virtual environment manually, or run the `venv_create.bat` script to automatically create a Python virtual environment.
-2. **Install Dependencies**: If you didn't install the packages in the previous step, activate the environment (`venv\Scripts\activate.bat`) and run:
-3. ```bash
-   pip install -r requirements.txt
-   ```
+1. Create/activate your virtual environment (`venv_create.bat` is included if needed).
+2. Install dependencies:
+```bash
+pip install -r requirements.txt
+```
+3. Copy template config:
+```bash
+copy config.example.ini config.ini
+```
+4. Edit `config.ini`.
 
 ## Configuration
 
-Defaults are versioned in [`config.example.ini`](./config.example.ini).
+Settings come from [`config.ini`](./config.ini).
 
-Local settings are read from `config.ini`:
-- If `config.ini` exists, it is used.
-- If `config.ini` is missing, the script automatically creates it from `config.example.ini` on first run.
+`[settings]`:
+- `architecture`: `clip | siglip | t5`
+- `mode`: `log | text | sort`
+- `log_order`: `input | category` (used by `mode=log`)
+- `result_location`: `input | output` (used by `mode=text` and `mode=sort`)
+- `sort_operation`: `copy | move` (used by `mode=sort`)
+- `top_k`: integer `>= 1` (used for top matches and `text` tags)
 
-Edit your local `config.ini`:
+`[categories]`:
+- Left side of `=` is the output/printed category name.
+- Right side of `=` is the matching label.
+- Repeat the same left side to map multiple labels into one category.
 
-- `[settings]`
-  
-  - `architecture`: `clip | siglip | t5`
-  - `mode`: `log | text | sort`
-  - `log_order`: `input | category` (used only when `mode=log`)
-  - `result_location`: `input | output` (used when `mode=text` or `mode=sort`)
-  - `sort_operation`: `copy | move` (used when `mode=sort`)
-  - `top_k`: number of matches to compute/print
-
-- `[categories]`
-  
-  - Left side of `=`: printed/output category name
-  - Right side of `=`: one vector-search label used for matching
-  - To map many labels into one category, repeat the same left-side category on multiple lines
-
-Example:
-
+Current template example:
 ```ini
 [categories]
-black_and_white_drawing = black and white drawing
+man = man
+woman = woman
+environment = landscape
+environment = environment
+house = house
+cartoon = cartoon
+manga = manga
+object = object
+food = food
+animal = animal
 ```
 
 ## Usage
 
-Run with default input folder (`./input`):
-
+Default input folder (`./input`):
 ```bash
 py imagesort.py
 ```
 
-Run on specific directory:
-
+Specific path(s):
 ```bash
 py imagesort.py "C:\path\to\images"
-```
-
-Run on multiple directories/files:
-
-```bash
 py imagesort.py "C:\images\a" "C:\images\b" "C:\images\one_file.png"
 ```
 
-## Modes
+## Mode behavior
 
-- `mode=log`
-  
-  - Prints predictions only.
-  - `log_order=input`: keeps original discovered order.
-  - `log_order=category`: groups output by best predicted category.
+`mode=log`:
+- Prints matches only.
+- `log_order=input`: original discovered order.
+- `log_order=category`: grouped by best predicted category.
 
-- `mode=text`
-  
-  - Writes `<image>.txt` with best category label.
-  - `result_location=input`: write next to original image.
-  - `result_location=output`: write txt into mirrored path under `./output`.
+`mode=text`:
+- Writes `<image>.txt` with comma-separated top tags (from `top_k`).
+- `result_location=input`: writes next to source image.
+- `result_location=output`: writes to mirrored path under `./output`.
 
-- `mode=sort`
-  
-  - Places image into predicted category subfolder.
-  - `result_location=input`: sort under source/input root.
-  - `result_location=output`: sort under `./output/<category>/`.
-  - `sort_operation=copy`: keep originals and copy sorted files.
-  - `sort_operation=move`: move originals into sorted location.
-
-## Script
-
-Main script:
-
-- [`imagesort.py`](./imagesort.py)
+`mode=sort`:
+- Sorts images into category folders.
+- `result_location=input`: sort under source/input root.
+- `result_location=output`: sort under `./output/<category>/`.
+- `sort_operation=copy`: copy file to sorted location.
+- `sort_operation=move`: move file to sorted location.
